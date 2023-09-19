@@ -1,23 +1,9 @@
 class RedBlackBalancedBinaryTree:
 	def __init__(self, make_root = False, root_value = None):
 		if make_root:
-			self.root = Node(root_value)
+			self.root = Node(root_value, color = 'black')
 		else:
 			self.root = None
-
-
-	def ident(self, depth):
-		max_depth = self.depth()
-		space_numbers =   2 ** (max_depth - depth ) - 1
-		return " " * space_numbers 
-
-	def space_between(self, depth):
-		max_depth = self.depth()
-		elements_on_level = 2 ** (depth - 1)
-		total_space_numbers = 2 ** max_depth - 1
-		indent_space_numbers =   2 ** (max_depth - depth ) - 1
-		space_between_numbers = (total_space_numbers - 2 * indent_space_numbers - elements_on_level) / (elements_on_level - 1)
-		return " " * int(space_between_numbers)
 
 
 	def depth(self):
@@ -35,31 +21,7 @@ class RedBlackBalancedBinaryTree:
 
 		return result
 
-
-
-
-	def tree_output(self):
-		max_depth = self.depth()
-		if max_depth > 0:
-			cur_depth = 1
-			nodes = [self.root]
-			except_list = [' ', None]
-			while cur_depth <= max_depth:
-				children = []
-				for i in range(len(nodes)):
-					val_for_insert = nodes[i].value if (nodes[i] != ' ') else ' '
-					if i == 0:
-						print(self.ident(cur_depth) + f'{val_for_insert}', end = '')
-					else:
-						print(self.space_between(cur_depth) + f'{val_for_insert}', end = '') 
-					
-					children.append( nodes[i].left_child if ((nodes[i] not in except_list) and nodes[i].left_child) else ' ')
-					children.append( nodes[i].right_child if ((nodes[i] not in except_list) and nodes[i].right_child) else ' ')	
-				print()
-				
-				cur_depth += 1	 
-				nodes = children
-		print()	
+	
 
         	
 	def includes(self, value):
@@ -94,19 +56,36 @@ class RedBlackBalancedBinaryTree:
 
 
 	def balancing(self):
-		all_nodes = self.all_nodes
+		work_node = Node()
 		countine = True
 		while countine:
+			nodes = self.all_nodes()
 			countine = False
-			if self.root.color == 'red':
+			if self.root and self.root.color == 'red':
 				self.root.color = 'black'
-			for node in all_nodes:
-				condition_fst_part_fst = node.right_child and node.right_child == 'red'
-				condition_fst_part_snd = node.left_child and node.left_child == 'black'
-				condition_fst = condition_fst_part_fst and condition_fst_part_snd
+			i = 0
+			not_out = True
+			while not_out  and i < len(nodes):
+				balanced_node = work_node.node_balancing(self.root)
+				self.root = balanced_node[0]
+				countine = balanced_node[1]
+				not_out = not countine
 
-				if condition_fst:
-					n			
+				if nodes[i].left_child:
+					left_child = nodes[i].left_child
+					balanced_node = work_node.node_balancing(left_child)
+					nodes[i].left_child = balanced_node[0]
+					countine = balanced_node[1]
+					not_out = not countine
+				if nodes[i].right_child and not_out:
+					right_child = nodes[i].right_child
+					balanced_node = work_node.node_balancing(right_child)
+					nodes[i].right_child = balanced_node[0]
+					countine = balanced_node[1]
+					not_out = not countine
+				i += 1
+
+
 			
 
 
@@ -134,11 +113,11 @@ class RedBlackBalancedBinaryTree:
 
 
 class Node:
-	def __init__(self, value = None, left_child = None, right_child = None):
+	def __init__(self, value = None, left_child = None, right_child = None, color = 'red'):
 		self.left_child = left_child
 		self.right_child = right_child
 		self.value = value
-		self.color = 'red'
+		self.color = color
 
 	def little_left_turn(self):
 		temp = self.left_child.right_child
@@ -168,6 +147,27 @@ class Node:
 		self.color = 'red'
 		self.left_child.color = 'black'
 		self.right_child.color = 'black'
+		return self
+
+	def node_balancing(self, node):
+		condition_fst_part_fst = node.right_child and node.right_child.color == 'red'
+		condition_fst_part_snd = node.left_child and node.left_child.color == 'black'
+		condition_fst = condition_fst_part_fst and condition_fst_part_snd
+
+		condition_snd_part_fst = node.left_child and node.left_child.color == 'red'
+		condition_snd = condition_snd_part_fst and node.left_child.left_child and node.left_child.left_child.color == 'red'
+
+		condition_thd_part_fst = node.right_child and node.right_child.color == 'red'
+		condition_thd_part_snd = node.left_child and node.left_child.color == 'red'
+		condition_thd = condition_thd_part_fst and condition_thd_part_snd
+				
+		if condition_fst:
+			return [node.little_right_turn(), True, 'fst']	
+		elif condition_snd:	
+			return [node.little_left_turn(), True, 'snd']
+		elif condition_thd:
+			return [node.change_color(), True, 'thd']	
+		return [node, False, 'fth']
 
 
 class List_Processor:
@@ -189,18 +189,23 @@ class List_Processor:
 
 
 
-# tree_fst = RedBlackBalancedBinaryTree(True, 6)
-# tree_fst.root.left_child = Node(3)
-# tree_fst.root.right_child = Node(8)
-# tree_fst.tree_output()
-# print([el.value for el in tree_fst.all_nodes()])
+tree_fst = RedBlackBalancedBinaryTree(True, 2)
 
-# tree_fst.tree_output()
-# tree_fst.add_element(7)
-# tree_fst.add_element(9)
-# tree_fst.tree_output()
-tree_fst = RedBlackBalancedBinaryTree()
-print(tree_fst.all_nodes())
-# print(tree_fst.includes(2))
+tree_fst.add_element(1)
+tree_fst.balancing()
+
+tree_fst.add_element(3)
+tree_fst.balancing()
+
+tree_fst.add_element(7)
+tree_fst.balancing()
+
+tree_fst.add_element(9)
+tree_fst.balancing()
+
+
+
+
+
 
 
